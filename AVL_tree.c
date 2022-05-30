@@ -14,6 +14,22 @@ typedef struct tree {
 	int count;
 } tree;
 
+/* propotype of funtions */
+node *create_node(float data);
+tree *create_tree(void);
+int height(node *p_node);
+int balance_cal(node *p_node);
+int right_rot(tree *p_tree, node *p_node);
+int left_rot(tree *p_tree, node *p_node);
+int balance_tree(tree *p_tree, node *p_node);
+int insert_node(tree *p_tree, node *p_node);
+int insert_node_data(tree *p_tree, float node_key);
+int browse_NLR(node *p_node);
+node *find_successor(node *p_node);
+int swap(node *node1, node *node2);
+int delete_node(tree *p_tree, node *p_node);
+int find_element(node *p_node, float element, int *total);
+
 /* funtions create node of AVL tree */
 node *create_node(float data)
 {
@@ -296,6 +312,182 @@ int insert_node_data(tree *p_tree, float node_key)
 	return insert_node(p_tree, p_node);
 }
 
+/* function find successor of node, which has min key greater than node key */
+node *find_successor(node *p_node)
+{
+	if (NULL == p_node)
+		return NULL;
+	node *tmp_node = p_node->right;
+	while (NULL != tmp_node->left)
+	{
+		tmp_node = tmp_node->left;
+	}
+	return tmp_node;
+}
+
+/* funtion swaps key of two nodes */
+int swap(node *node1, node *node2)
+{
+	if (NULL == node1 || NULL == node2)
+		return -1;
+	float tmp_key;
+	tmp_key = node1->key;
+	node1->key = node2->key;
+	node2->key = tmp_key;
+	return 0;
+}
+
+/* function delete a node from AVL tree */
+int delete_node(tree *p_tree, node *p_node)
+{
+	if (NULL == p_tree || NULL == p_node)
+		return -1;
+	if (p_tree->root == p_node) /* node is root */
+	{
+		if (NULL == p_node->left && NULL == p_node->right)
+		{
+			free(p_node);
+			p_tree->root = NULL;
+			p_tree->count--;
+			return 0;
+		}
+		else if (NULL == p_node->left && NULL != p_node->right)
+		{
+			node *tmp_node = p_node->right;
+			free(p_node);
+			p_tree->root = tmp_node;
+			p_tree->count--;
+			tmp_node->father = NULL;
+			return 0;
+		}
+		else if (NULL != p_node->left && NULL == p_node->right)
+		{
+			node *tmp_node = p_node->left;
+			free(p_node);
+			p_tree->root = tmp_node;
+			p_tree->count--;
+			tmp_node->father = NULL;
+			return 0;
+		}
+		else
+		{
+			node *tmp_node = find_successor(p_node);
+			swap(tmp_node, p_node);
+			node *father_node = tmp_node->father;
+			if (father_node->left == tmp_node)
+			{
+				father_node->left = NULL;
+			}
+			else
+			{
+				father_node->right = NULL;
+			}
+			free(tmp_node);
+			p_tree->count--;
+			balance_tree(p_tree, father_node);
+			return 0;
+		}
+	}
+	else /* node is not root */
+	{
+		if (NULL == p_node->left && NULL == p_node->right)
+		{
+			node *father_node = p_node->father;
+			if (father_node->left == p_node)
+			{
+				father_node->left = NULL;
+			}
+			else
+			{
+				father_node->right = NULL;
+			}
+			free(p_node);
+			p_tree->count--;
+			balance_tree(p_tree, father_node);
+			return 0;
+		}
+		else if (NULL == p_node->left && NULL != p_node->right)
+		{
+			node *father_node = p_node->father;
+			node *right_node = p_node->right;
+			if (father_node->left == p_node)
+			{
+				father_node->left = right_node;
+			}
+			else 
+			{
+				father_node->right = right_node;
+			}
+			right_node->father = father_node;
+			free(p_node);
+			p_tree->count--;
+			balance_tree(p_tree, right_node);
+			return 0;
+		}
+		else if (NULL != p_node->left && NULL == p_node->right)
+		{
+			node *father_node = p_node->father;
+			node *left_node = p_node->left;
+			if (father_node->left == p_node)
+			{
+				father_node->left = left_node;
+			}
+			else
+			{
+				father_node->right = left_node;
+			}
+			left_node->father = father_node;
+			free(p_node);
+			p_tree->count--;
+			balance_tree(p_tree, left_node);
+			return 0;
+		}
+		else
+		{
+			node *successor_node = find_successor(p_node);
+			node *father_node = successor_node->father;
+			swap(successor_node, p_node);
+			if (father_node->left == successor_node)
+			{
+				father_node->left = NULL;
+			}
+			else
+			{
+				father_node->right = NULL;
+			}
+			free (successor_node);
+			p_tree->count--;
+			balance_tree(p_tree, father_node);
+			return 0;
+		}
+	}
+}
+
+/* function finds total number of an element in tree */
+int find_element(node *p_node, float element, int *total)
+{
+	if (NULL == p_node || NULL == total)
+		return 0;
+	node *tmp_node = p_node;
+	while (NULL != tmp_node && (tmp_node->key - element) != 0.00)
+	{
+		if (tmp_node->key < element)
+		{
+			tmp_node = tmp_node->right;
+		}
+		else
+		{
+			tmp_node = tmp_node->left;
+		}
+	}
+	if (NULL != tmp_node)
+	{
+		(*total)++;
+		find_element(tmp_node->left, element, total);
+	}
+	return *total;
+}
+
 /* function browses NLR */
 int browse_NLR(node *p_node)
 {
@@ -327,8 +519,21 @@ int main(int argc, char *argv[])
 	insert_node_data(AVL_tree, 1.3);
 	insert_node_data(AVL_tree, 1.2);
 	insert_node_data(AVL_tree, 1.6);
+	insert_node_data(AVL_tree, 1.1);
+	insert_node_data(AVL_tree, 1.0);
+	insert_node_data(AVL_tree, 1.2);
+	insert_node_data(AVL_tree, 1.2);
 	browse_NLR(AVL_tree->root);
 	printf("\n");
+
+	delete_node(AVL_tree, AVL_tree->root->right);
+	delete_node(AVL_tree, AVL_tree->root->right);
+	browse_NLR(AVL_tree->root);
+	printf("\n");
+
+	int total = 0;
+	find_element(AVL_tree->root, 1.2, &total);
+	printf("total = %d\n", total);
 
 	return 0;
 }
